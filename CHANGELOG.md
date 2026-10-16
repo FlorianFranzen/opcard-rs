@@ -8,6 +8,7 @@ SPDX-License-Identifier: CC0-1.0
 ## Unreleased
 
 - List only the algorithms the card can import or generate in the algorithm information (DO FA), following `Options::allowed_imports` and `Options::allowed_generation`
+- Default the key attributes of a fresh card to Curve25519 in builds without RSA, instead of RSA 2048 the card cannot import
 
 ## [v1.11.0][] (2026-09-17)
 

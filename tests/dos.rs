@@ -300,3 +300,30 @@ fn algorithm_information() {
         assert_eq!(authentication.len(), 2);
     });
 }
+
+#[test]
+fn default_attributes_are_available() {
+    use openpgp_card::KeyType;
+
+    if card::dangerous_real_card_enabled() {
+        return;
+    }
+
+    // A fresh card's key attributes are among the algorithms it advertises, so a client that
+    // keeps them imports or generates something the build can actually back
+    with_tx_options(Options::default(), |mut tx| {
+        let info = tx.algorithm_information().unwrap().unwrap();
+        let appdata = tx.application_related_data().unwrap();
+        for kt in [
+            KeyType::Signing,
+            KeyType::Decryption,
+            KeyType::Authentication,
+        ] {
+            let attributes = appdata.algorithm_attributes(kt).unwrap();
+            assert!(
+                info.filter_by_keytype(kt).contains(&&attributes),
+                "{kt:?} defaults to {attributes}, which the card does not list"
+            );
+        }
+    });
+}

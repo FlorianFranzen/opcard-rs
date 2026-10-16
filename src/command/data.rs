@@ -1414,15 +1414,15 @@ mod tests {
                 (DataObject::ExtendedCapabilities, &EXTENDED_CAPABILITIES),
                 (
                     DataObject::AlgorithmAttributesSignature,
-                    SignatureAlgorithm::Rsa2048.attributes(),
+                    SignatureAlgorithm::default().attributes(),
                 ),
                 (
                     DataObject::AlgorithmAttributesDecryption,
-                    DecryptionAlgorithm::Rsa2048.attributes(),
+                    DecryptionAlgorithm::default().attributes(),
                 ),
                 (
                     DataObject::AlgorithmAttributesAuthentication,
-                    AuthenticationAlgorithm::Rsa2048.attributes(),
+                    AuthenticationAlgorithm::default().attributes(),
                 ),
                 (
                     DataObject::PwStatusBytes,
