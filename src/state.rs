@@ -1691,7 +1691,17 @@ mod tests {
     #[allow(clippy::unwrap_used)]
     #[test]
     fn test_deserialization() {
-        test_one_state("default", &Persistent::default());
+        // The stored states predate the feature-dependent default key attributes and hold
+        // RSA 2048 explicitly, which is what a card provisioned by those versions keeps
+        test_one_state(
+            "default",
+            &Persistent {
+                sign_alg: SignatureAlgorithm::Rsa2048,
+                dec_alg: DecryptionAlgorithm::Rsa2048,
+                aut_alg: AuthenticationAlgorithm::Rsa2048,
+                ..Persistent::default()
+            },
+        );
         test_one_state(
             "all_non_default",
             &Persistent {

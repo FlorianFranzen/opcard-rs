@@ -318,9 +318,18 @@ iterable_sub_enum! {
     }
 }
 
+/// The key attributes of a fresh card: RSA 2048 as before where the build imports it,
+/// Curve25519 otherwise, so a card never starts out announcing an algorithm it cannot back
 impl Default for SignatureAlgorithm {
     fn default() -> Self {
-        Self::Rsa2048
+        #[cfg(feature = "rsa2048")]
+        {
+            Self::Rsa2048
+        }
+        #[cfg(not(feature = "rsa2048"))]
+        {
+            Self::Ed255
+        }
     }
 }
 
@@ -378,9 +387,17 @@ iterable_sub_enum! {
     }
 }
 
+/// The key attributes of a fresh card, chosen as for [`SignatureAlgorithm`]
 impl Default for DecryptionAlgorithm {
     fn default() -> Self {
-        Self::Rsa2048
+        #[cfg(feature = "rsa2048")]
+        {
+            Self::Rsa2048
+        }
+        #[cfg(not(feature = "rsa2048"))]
+        {
+            Self::X255
+        }
     }
 }
 
@@ -438,9 +455,17 @@ iterable_sub_enum! {
     }
 }
 
+/// The key attributes of a fresh card, chosen as for [`SignatureAlgorithm`]
 impl Default for AuthenticationAlgorithm {
     fn default() -> Self {
-        Self::Rsa2048
+        #[cfg(feature = "rsa2048")]
+        {
+            Self::Rsa2048
+        }
+        #[cfg(not(feature = "rsa2048"))]
+        {
+            Self::Ed255
+        }
     }
 }
 
