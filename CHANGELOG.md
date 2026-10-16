@@ -7,6 +7,8 @@ SPDX-License-Identifier: CC0-1.0
 
 ## Unreleased
 
+- List only the algorithms the card can import or generate in the algorithm information (DO FA), following `Options::allowed_imports` and `Options::allowed_generation`
+
 ## [v1.11.0][] (2026-09-17)
 
 [v1.11.0]: https://github.com/Nitrokey/opcard-rs/releases/tag/v1.11.0

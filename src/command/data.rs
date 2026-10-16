@@ -589,19 +589,23 @@ fn pw_status_bytes<T: crate::card::Client>(mut ctx: Context<'_, T>) -> Result<()
 }
 
 fn algo_info<T: crate::card::Client>(mut ctx: Context<'_, T>) -> Result<(), Status> {
-    for alg in SignatureAlgorithm::iter_all() {
+    // Only what this card can import or generate: clients pick an algorithm from this list
+    // and change the key attributes to it, so an entry the build cannot back only fails at
+    // the import or generation that follows
+    let available = ctx.options.allowed_imports | ctx.options.allowed_generation;
+    for alg in SignatureAlgorithm::iter_all().filter(|alg| alg.is_allowed(available)) {
         ctx.reply.expand(&[0xC1])?;
         let offset = ctx.reply.len();
         ctx.reply.expand(alg.attributes())?;
         ctx.reply.prepend_len(offset)?;
     }
-    for alg in DecryptionAlgorithm::iter_all() {
+    for alg in DecryptionAlgorithm::iter_all().filter(|alg| alg.is_allowed(available)) {
         ctx.reply.expand(&[0xC2])?;
         let offset = ctx.reply.len();
         ctx.reply.expand(alg.attributes())?;
         ctx.reply.prepend_len(offset)?;
     }
-    for alg in AuthenticationAlgorithm::iter_all() {
+    for alg in AuthenticationAlgorithm::iter_all().filter(|alg| alg.is_allowed(available)) {
         ctx.reply.expand(&[0xC3])?;
         let offset = ctx.reply.len();
         ctx.reply.expand(alg.attributes())?;
