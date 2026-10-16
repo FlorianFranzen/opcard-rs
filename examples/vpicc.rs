@@ -22,6 +22,9 @@
 // https://git.sr.ht/~ireas/openpgp-card-client
 //
 // Set `RUST_LOG=opcard::card=info` to see the executed commands.
+//
+// Set `VPICC_USER_PRESENCE` to a file to decide touch requests from a test: `deny` in it
+// refuses them, anything else grants them. Unset, every request is granted.
 
 // TODO: add CLI
 
