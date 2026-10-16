@@ -214,9 +214,38 @@ pub mod dispatch {
 use std::path::PathBuf;
 use trussed::{
     pipe::TrussedChannel,
+    platform::{Platform as _, UserInterface},
     virt::{self, Client, Runner, StorageConfig, StoreConfig},
 };
-use trussed_core::types::Bytes;
+use trussed_core::types::{Bytes, consent};
+
+/// Names a file that decides user presence, for tests that need a touch to be refused
+///
+/// Unset, every presence check is granted, as before. Set, the file is read on every check:
+/// `deny` refuses (the request then waits out its timeout, as on a token nobody touches),
+/// anything else or a missing file grants.
+pub const USER_PRESENCE_ENV: &str = "VPICC_USER_PRESENCE";
+
+/// User presence as the file named by [`USER_PRESENCE_ENV`] says
+struct FileUserPresence(PathBuf);
+
+impl UserInterface for FileUserPresence {
+    fn check_user_presence(&mut self) -> consent::Level {
+        match std::fs::read_to_string(&self.0) {
+            Ok(answer) if answer.trim() == "deny" => consent::Level::None,
+            _ => consent::Level::Normal,
+        }
+    }
+}
+
+/// Hand presence checks to [`FileUserPresence`] when the environment names a file
+fn control_user_presence(platform: &mut virt::Platform<'_>) {
+    if let Some(path) = std::env::var_os(USER_PRESENCE_ENV) {
+        platform
+            .user_interface()
+            .set_inner(Box::new(FileUserPresence(path.into())));
+    }
+}
 
 /// Client type using a dispatcher with the backends required by opcard
 pub type VirtClient<'a> = Client<'a, dispatch::Dispatch>;
@@ -226,7 +255,8 @@ pub fn with_client<R, F>(store: StoreConfig, client_id: &str, f: F) -> R
 where
     F: FnOnce(VirtClient<'_>) -> R,
 {
-    virt::with_platform(store, |platform| {
+    virt::with_platform(store, |mut platform| {
+        control_user_presence(&mut platform);
         platform.run_client_with_backends(
             client_id,
             dispatch::Dispatch::with_hw_key(Bytes::from(b"some bytes")),
@@ -266,7 +296,8 @@ pub fn with_leaking_client<R, F>(store: StoreConfig, client_id: &str, f: F) -> R
 where
     F: FnOnce(VirtClient<'static>) -> R,
 {
-    virt::with_platform(store, |platform| {
+    virt::with_platform(store, |mut platform| {
+        control_user_presence(&mut platform);
         let channel = Box::leak(Box::new(TrussedChannel::new()));
         let mut runner = Runner::new();
         #[expect(clippy::unwrap_used)]
@@ -276,4 +307,21 @@ where
         let client = Client::new(requester, runner.syscall(), None);
         runner.run(platform, dispatch, || f(client))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_file_decides_user_presence() {
+        let path = std::env::temp_dir().join(format!("vpicc-up-{}", std::process::id()));
+        let mut presence = FileUserPresence(path.clone());
+        assert_eq!(presence.check_user_presence(), consent::Level::Normal);
+        std::fs::write(&path, "deny\n").unwrap();
+        assert_eq!(presence.check_user_presence(), consent::Level::None);
+        std::fs::write(&path, "grant").unwrap();
+        assert_eq!(presence.check_user_presence(), consent::Level::Normal);
+        std::fs::remove_file(&path).unwrap();
+    }
 }
